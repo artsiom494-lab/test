@@ -4,7 +4,9 @@ kind: Kustomization
 resources:
 - artem-sealed.yaml
 - karina-sealed.yaml
+- la-sealed.yaml
 - opa-sealed.yaml
 - artem-sync.yaml
 - karina-sync.yaml
+- la-sync.yaml
 - opa-sync.yaml
