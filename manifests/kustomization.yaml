@@ -3,5 +3,6 @@ kind: Kustomization
 
 resources:
 - artem-sealed.yaml
+- karina-sealed.yaml
 - artem-sync.yaml
-
+- karina-sync.yaml
