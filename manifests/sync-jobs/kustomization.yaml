@@ -4,4 +4,3 @@ kind: Kustomization
 resources:
 - artem-sync.yaml
 - ohoho-sync.yaml
-- popa-sync.yaml
