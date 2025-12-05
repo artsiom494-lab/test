@@ -1,0 +1,14 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: opa
+  namespace: default
+spec:
+  encryptedData:
+    opa: AgB2ksrrUB6KrUd/ulHSmg2B1ghVwKxw746wilrZWJ5a8sH9Rj4hEphHz1EbsWFgnFD000Hga5bcHE8yQOvnHJ/zArSKtW9vli8sX06xF7fvTjScRN36XVg18IkDVJxPcdx9qCmV3k2nUHPef7IvrvYo6KFN6YspDSkWGkP+w138laeYUXgNp72vasrbvINIfbbMtV/SFj0WQ3jkzXRxdvt2SuGCPqYQBj4O+XTPmaM0uoralxSaIwOEvJ9eq+Z/S9Td930ostrACzbblhRnXq5ZEUec7/FnOZb3saWR8JFuDyENemc2QQaRIIWyWqP+xBFcvwPOMVy71juT/2d5Wh95xS5TBxt3yAcAIaUDOoqHr5SvElUG8nXmB9eAxTGEhyAkOrb5Q3IDoWvT0S1/yJ3kcnrWqE3XJvc6mMeHOUoTYSH0QS8q396ziulk4yRAnJlszB7pUBh/hYqsVxSei60A40Ia/kNLfwB3UkmsVaGt3LPm5g+7f/6YhwTziFHIH5ARreezRwIkddBj+VtKsqTT8lxCuCWhsnG1IR02rRIhdyVlJeU+JfnVfOlwMgHp9pLsCF3FBJ1r8zB6y9c6LjACloX0g8rOdHY7IJmL/MVBZNC6qGSx9zollK5SkcpZAfE695q7mu0aNEAzczlmh8s0JLHYmt/rmHM/zCbAyA1lW+vJTsqUJKOTY8zyQMISSKxtWrA=
+  template:
+    metadata:
+      name: opa
+      namespace: default
+    type: Opaque

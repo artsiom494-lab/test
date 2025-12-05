@@ -1,0 +1,14 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: karina
+  namespace: default
+spec:
+  encryptedData:
+    ya: AgCUvUMa8yiNTMwPiY9dNx4wc8DKWFs6mS2Sc3ea+FNvpOQJDvqvV1CM8zJ11KLhuZu8Ks8VGxkYze5kHZgrRGw3HY/n/nquxiSbAyqhLhP2O11NWHB6Aqozf+DL4/pI4pY0XGmRl2n8xZrT5SIQSq1oeV21aumnk45qqkp58Dj94S1FLDTEkDoSEY7fa5//ef7BKZu3nYqVBpaXFtlqD8uA38tvAL6jnqaoTYMjwIW1hAaJ8gFhb5tI6YvdApJ4Ywj2HKdOZzwI8nt2VZpUYS5mTR4lcgT1wtuW3x7Y3WqBkdO5NJHL7A4gqO6HxHzP6Mb6UnnN+c/0Jb1IGw4tAO9gm8FgFY4cMeP/Fix69/Goa4Bhf9JSYmI7eLSPihcmwJGuH8q3bWuiKSGituFg6Q9RWCVfAAbTrwEtUVsYboU8LZXKVnatE1SkahaW87gru+fCgFKkQ3y29/lwDU+Lmc8HbZbpYZ4zQgREz0PsAhwXFHF14a7iUc/dk5R4n7d8lGW7P4O5pNyjP/mtUSOYqaNCwkhGyJ9mqsv+0+6YP0KTi65j59/ka1SwQ4QIvCJWB/Flhg3r5zdtUeSR/X8IYR6gmbRiZo7tIr/pqY5Y0YEQAOiTGkprs4hyS8bNi+SsRPoWjTo9wkDxMRNzRwJdL6hf/tDpTFWfMBR1jwDnNQvQWKYQXh93zTB+9gvi/7pMmk5p52o=
+  template:
+    metadata:
+      name: karina
+      namespace: default
+    type: Opaque
