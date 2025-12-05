@@ -23,8 +23,7 @@ spec:
           echo "Using Vault token: ${VAULT_TOKEN:0:15}..."
           
           cat > /tmp/vault-payload.json << 'DATA'
-          {"data": {
-"ohoho": "12345"}}
+          {"data": {"ohoho": "12345"}}
           DATA
           
           echo "Payload:"
