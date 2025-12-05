@@ -1,0 +1,14 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: ohoho
+  namespace: default
+spec:
+  encryptedData:
+    ohoho: AgClQjg6p24pLaUt/9tq/mxtozncoycxaBsr8wkvGtPvKStk2QWiAO+ae74GpZdkuMFl1LEINsM/9YuwmX0y9ofPcy2TQs1dLPYSAEr/Z3kMinxGH4Bi3ppGp6mI3MvZAJQKYwMd9U0pEYdUDp5Xr2xBz2QAKSixNdQNfG938qgQx2hcs5svcCC/moFVKEKVPBXOnZp6MDItut8AebIV3GAhZL0Uo+nLNAmMVq6m9R7fkAeokIcue8XAUjoBnrQNkEn8CXG7OixIzTpDDTM/0Uwoa/C25sB50+Ron0YtBRPPKoRiFTuGXsOtUWzsbemtbjgfDLXhs927DGtf13WjQNPSlPXmfePHOVgI3QmxtXB5efqfg2AFkFA1bMZjUOP0LaN0I50oygMFwyfXFwc45Rk/IIJi0eNYjKzHaye2xEki+SyZpCiCi9cLH1396+pnejnyhBPSo6Ycrj3LpgtX67slHMEJb/Ic9t2jwm8v0yq1M38p6NxmoaYk1IsfTcImiozzxAzyP5tu2yBMXQTqsUP4dAoQIlJ7Jk6WLfXIM0ojThXXzsqWIfQvPu20fCkrrZ0pAw3Uv69r3/cAbO3hQx/+eiEDpeInAtKDdMIdmKnKeJRfsfePA8XjB1OU0ZN3Lj2enZk7WTPYGi6F/lDt8/MsmPLEF3Fc8pNiDrTEx5EnNWEvPhiVMqKmJ+Bk6NmXaNhaH9ywHw==
+  template:
+    metadata:
+      name: ohoho
+      namespace: default
+    type: Opaque
