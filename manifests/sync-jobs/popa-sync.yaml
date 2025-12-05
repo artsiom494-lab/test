@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: popa-to-vault
+  namespace: default
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      containers:
+      - name: vault-sync
+        image: curlimages/curl:latest
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          set -e
+          echo "=== Syncing popa to Vault ==="
+          
+          VAULT_TOKEN=$(cat /vault-token/token)
+          echo "Using Vault token: ${VAULT_TOKEN:0:15}..."
+          
+          cat > /tmp/vault-payload.json << 'DATA'
+          {"data": {"popa":"moya","popa":"kariny"}}
+          DATA
+          
+          echo "Payload:"
+          cat /tmp/vault-payload.json | jq . 2>/dev/null || cat /tmp/vault-payload.json
+          
+          RESPONSE=$(curl -k -s -w "\n%{http_code}" -X POST \
+            -H "X-Vault-Token: $VAULT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @/tmp/vault-payload.json \
+            https://vault.vault.svc:8200/v1//secret/data/popa)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "HTTP Code: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Successfully synced to Vault"
+          else
+            echo "❌ Failed to sync to Vault"
+            echo "Error: $BODY"
+            exit 1
+          fi
+          
+          sleep 5
+        volumeMounts:
+        - name: secrets
+          mountPath: /secrets
+          readOnly: true
+        - name: vault-token
+          mountPath: /vault-token
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: popa
+      - name: vault-token
+        secret:
+          secretName: vault-token
+      restartPolicy: Never

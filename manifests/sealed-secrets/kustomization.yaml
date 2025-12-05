@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
 - artem.yaml
 - ohoho.yaml
+- popa.yaml
