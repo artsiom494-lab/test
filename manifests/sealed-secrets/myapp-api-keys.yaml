@@ -1,0 +1,14 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: myapp-api-keys
+  namespace: default
+spec:
+  encryptedData:
+    "0": AgBjBprDx//ReeryGHYsJId3DgdutzsaLkXK5wmrpaS93npV4OIlW6/OzZnFnYFLvFFuDPk+vc5rpgOlBSeASjSC5cDyRxX5bco0NDCWNpxAEKF1x+hu9lI1QnWvNqDoowhe+cLTOQNi2ZB4c4O1MYJ+vRtmbojGa0w8WCN/ZbF3LqPoT9wAWSWs0m9zWiBWWpzkc1+vdqoQ2r4dBQ5FP4jmMcv56NNlc1+zKBiv0Q4aaQwEWDC68F86eN2HM968KAI7kfWfsz5iSnAdfNAeMsEycSO8c5pCNlHRNzCFjRDHdXAkeXz8cHOdVY4tr5bKwz2+aCVA1V3xutaPJ+fZ7iqDCZ38C3tjWKTLiwvcPt1Atd7VbXMT8sMIoNmhtNJvKFosXqJm+4p0il2WCoYr8N48XbWMfxW1Q0pYj93CmTPwuUu3IU+CZEX85MMMy3SDV90dQim+5VbZEYnxzT262n+ruymr0mSO+q0ko2regzc2/OJ0gvLYoMeU4tJZir4XEgexjioH78YB+CdXnQNosrgip1O4KOlgG+W+mCMagHKVwNocT0NNlVm/nE5K8wpR/kzdbhlXDjxDG9TfbxAh+ja31VhB30kUoanTUJmUl9mBB6pqUoJzgebL+pCEGFNtFRVqyq8RWbS4aLuYKtb/fcAy16mnn/l2ioJed+8aR8ZF69Qsq4k39sxs14Jk/9mtyPnnyLgIC+Bb/IDK0Uo=
+  template:
+    metadata:
+      name: myapp-api-keys
+      namespace: default
+    type: Opaque

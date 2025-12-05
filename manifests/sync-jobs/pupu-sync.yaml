@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pupu-to-vault
+  namespace: default
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: vault-sync
+        image: curlimages/curl:latest
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          # Ждем Vault
+          until curl -k -s https://vault.vault.svc:8200/v1/sys/health > /dev/null; do
+            sleep 2
+          done
+          
+          # Пишем в Vault
+          echo "Writing to Vault..."
+          cat > /tmp/data.json << 'DATA'
+          {"data": {"pupu": "123", "pupu2": "12345"}}
+          DATA
+          
+          curl -k -X POST \
+            -H "X-Vault-Token: root" \
+            -H "Content-Type: application/json" \
+            -d @/tmp/data.json \
+            https://vault.vault.svc:8200/v1/secret/data/apps/pupu
+          
+          echo "✅ Секрет записан в Vault"
+        volumeMounts:
+        - name: secrets
+          mountPath: /secrets
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: pupu
+      restartPolicy: Never

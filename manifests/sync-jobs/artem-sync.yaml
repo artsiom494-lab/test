@@ -1,0 +1,90 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: artem-to-vault
+  namespace: default
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      containers:
+      - name: vault-sync
+        image: curlimages/curl:latest
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          set -e
+          
+          echo "=== Syncing artem to Vault ==="
+          
+          # Получаем токен
+          VAULT_TOKEN=$(cat /vault-token/token)
+          echo "Using Vault token: ${VAULT_TOKEN:0:15}..."
+          
+          # Создаем JSON из всех файлов в секрете
+          echo '{"data": {' > /tmp/vault-payload.json
+          first=true
+          for file in /secrets/*; do
+            if [ "$first" = "false" ]; then
+              echo -n ', ' >> /tmp/vault-payload.json
+            fi
+            key=$(basename $file)
+            value=$(cat $file)
+            echo -n "\"$key\": \"$value\"" >> /tmp/vault-payload.json
+            first=false
+          done
+          echo '}}' >> /tmp/vault-payload.json
+          
+          echo "Payload:"
+          cat /tmp/vault-payload.json | jq . 2>/dev/null || cat /tmp/vault-payload.json
+          
+          # Отправляем в Vault
+          echo ""
+          echo "Sending to Vault..."
+          RESPONSE=$(curl -k -s -w "\n%{http_code}" -X POST \
+            -H "X-Vault-Token: $VAULT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @/tmp/vault-payload.json \
+            https://vault.vault.svc:8200/v1/secret/data/artem)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "HTTP Code: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Successfully synced to Vault"
+            echo "Response: $BODY"
+          else
+            echo "❌ Failed to sync to Vault"
+            echo "Error: $BODY"
+            exit 1
+          fi
+          
+          echo ""
+          echo "=== Verification ==="
+          curl -k -s -H "X-Vault-Token: $VAULT_TOKEN" \
+            https://vault.vault.svc:8200/v1/secret/data/artem | jq .data.data 2>/dev/null || \
+            echo "Could not verify (jq not available)"
+          
+          echo ""
+          echo "Job completed successfully"
+          sleep 10
+        volumeMounts:
+        - name: secrets
+          mountPath: /secrets
+          readOnly: true
+        - name: vault-token
+          mountPath: /vault-token
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: artem
+      - name: vault-token
+        secret:
+          secretName: vault-token
+      restartPolicy: Never
