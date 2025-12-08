@@ -1,23 +1,26 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: vault-sync-operator
+  name: app-secrets
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: git@github.com:artsiom494-lab/test.git
     targetRevision: HEAD
-    path: sops/manifests/
+    path: sops/
     directory:
       recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: vault-sync-system
+    namespace: default
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-    - CreateNamespace=true
-    - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
