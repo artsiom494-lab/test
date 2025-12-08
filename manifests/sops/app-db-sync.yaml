@@ -12,15 +12,32 @@ spec:
     spec:
       containers:
       - name: vault-sync
-        image: curlimages/curl:latest
+        image: viaductai/sops:3.11.0
         command: ["/bin/sh", "-c"]
         args:
         - |
           set -e
-          VAULT_TOKEN=$(cat /vault-token/token)
-          echo '{"data": {"db": "artem", "prod": "karina"}}' > /tmp/new-data.json
-          curl -k -X POST             -H "X-Vault-Token: $VAULT_TOKEN"             -H "Content-Type: application/json"             -d @/tmp/new-data.json             https://vault.vault.svc.cluster.local:8200/v1/secret/data/apps/database
+          echo "🔓 Decrypting SOPS secret..."
+          sops --decrypt /secrets/app-db.yaml > /tmp/app-db.dec.yaml
+
+          echo "📤 Pushing to Vault..."
+          VAULT_TOKEN="hvs.p0asljk78XX7NfnFAz3F2yKa"
+          jq -r '.stringData' /tmp/app-db.dec.yaml | jq -n '{data: input}' > /tmp/app-db.json
+
+          curl -k -X POST             -H "X-Vault-Token: $VAULT_TOKEN"             -H "Content-Type: application/json"             -d @/tmp/app-db.json             https://vault.vault.svc.cluster.local:8200/v1/secret/data/apps/database
+
+          echo "✅ Secret synced!"
+        volumeMounts:
+        - name: secrets
+          mountPath: /secrets
+          readOnly: true
+        - name: vault-token
+          mountPath: /vault-token
+          readOnly: true
       volumes:
+      - name: secrets
+        secret:
+          secretName: app-db
       - name: vault-token
         secret:
           secretName: vault-token
