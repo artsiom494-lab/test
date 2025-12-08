@@ -1,52 +1,52 @@
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: artem-to-vault
-  namespace: default
-  annotations:
-    argocd.argoproj.io/hook: PostSync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
-spec:
-  ttlSecondsAfterFinished: 300
-  template:
-    spec:
-      containers:
-      - name: vault-sync
-        image: curlimages/curl:latest
-        command: ["/bin/sh", "-c"]
-        args:
-        - |
-          set -e
-          echo "=== Syncing artem to Vault ==="
+# apiVersion: batch/v1
+# kind: Job
+# metadata:
+#   name: artem-to-vault
+#   namespace: default
+#   annotations:
+#     argocd.argoproj.io/hook: PostSync
+#     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+# spec:
+#   ttlSecondsAfterFinished: 300
+#   template:
+#     spec:
+#       containers:
+#       - name: vault-sync
+#         image: curlimages/curl:latest
+#         command: ["/bin/sh", "-c"]
+#         args:
+#         - |
+#           set -e
+#           echo "=== Syncing artem to Vault ==="
           
-          # Получаем токен
-          VAULT_TOKEN=$(cat /vault-token/token)
-          echo "Token: ${VAULT_TOKEN:0:15}..."
+#           # Получаем токен
+#           VAULT_TOKEN=$(cat /vault-token/token)
+#           echo "Token: ${VAULT_TOKEN:0:15}..."
           
-          # Создаем JSON
-          echo '{"data": {"artem": "1234", "popa": "karinbI"}}' > /tmp/data.json
+#           # Создаем JSON
+#           echo '{"data": {"artem": "1234", "popa": "karinbI"}}' > /tmp/data.json
           
-          echo "Sending to Vault..."
-          curl -k -X POST \
-            -H "X-Vault-Token: $VAULT_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d @/tmp/data.json \
-            https://vault.vault.svc:8200/v1/secret/data/artem
+#           echo "Sending to Vault..."
+#           curl -k -X POST \
+#             -H "X-Vault-Token: $VAULT_TOKEN" \
+#             -H "Content-Type: application/json" \
+#             -d @/tmp/data.json \
+#             https://vault.vault.svc:8200/v1/secret/data/artem
           
-          echo "✅ Done"
-          sleep 3
-        volumeMounts:
-        - name: secrets
-          mountPath: /secrets
-          readOnly: true
-        - name: vault-token
-          mountPath: /vault-token
-          readOnly: true
-      volumes:
-      - name: secrets
-        secret:
-          secretName: artem
-      - name: vault-token
-        secret:
-          secretName: vault-token
-      restartPolicy: Never
+#           echo "✅ Done"
+#           sleep 3
+#         volumeMounts:
+#         - name: secrets
+#           mountPath: /secrets
+#           readOnly: true
+#         - name: vault-token
+#           mountPath: /vault-token
+#           readOnly: true
+#       volumes:
+#       - name: secrets
+#         secret:
+#           secretName: artem
+#       - name: vault-token
+#         secret:
+#           secretName: vault-token
+#       restartPolicy: Never
