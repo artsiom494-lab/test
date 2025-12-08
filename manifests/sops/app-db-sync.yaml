@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: app-db-to-vault
+  namespace: default
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      containers:
+      - name: vault-sync
+        image: curlimages/curl:latest
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          set -e
+          VAULT_TOKEN=$(cat /vault-token/token)
+          echo '{"data": {"db": "artem", "prod": "karina"}}' > /tmp/new-data.json
+          curl -k -X POST             -H "X-Vault-Token: $VAULT_TOKEN"             -H "Content-Type: application/json"             -d @/tmp/new-data.json             https://vault.vault.svc.cluster.local:8200/v1/secret/data/apps/database
+      volumes:
+      - name: vault-token
+        secret:
+          secretName: vault-token
+      restartPolicy: Never
