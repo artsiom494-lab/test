@@ -3,4 +3,3 @@ kind: Kustomization
 
 resources:
 - app-db-sync.yaml
-- app-db.yaml
