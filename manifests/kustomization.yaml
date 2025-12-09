@@ -3,6 +3,4 @@ kind: Kustomization
 
 resources:
 - art-sealed.yaml
-- db-sealed.yaml
 - art-sync.yaml
-- db-sync.yaml
