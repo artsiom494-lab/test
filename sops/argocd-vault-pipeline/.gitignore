@@ -1,0 +1,12 @@
+# Ключи
+age-key.txt
+*.key
+*.pem
+
+# Временные файлы
+.DS_Store
+*.tmp
+*.swp
+
+# Kubernetes
+kubeconfig

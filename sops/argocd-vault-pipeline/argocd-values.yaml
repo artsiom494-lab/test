@@ -1,0 +1,143 @@
+global:
+  image:
+    tag: "v2.11.0"
+
+server:
+  service:
+    type: ClusterIP
+  extraArgs:
+    - --insecure
+
+repoServer:
+  # Volumes для SOPS
+  volumes:
+    - name: custom-tools
+      emptyDir: {}
+    - name: age-key
+      secret:
+        secretName: age-key
+        optional: false
+  
+  volumeMounts:
+    - name: custom-tools
+      mountPath: /custom-tools
+    - name: age-key
+      mountPath: /home/argocd/.config/sops/age
+      readOnly: true
+  
+  # Init container устанавливает SOPS
+  initContainers:
+    - name: install-sops
+      image: alpine:3.20
+      command:
+        - sh
+        - -c
+        - |
+          # Устанавливаем SOPS
+          wget -q https://github.com/mozilla/sops/releases/download/v3.8.1/sops-v3.8.1.linux.amd64 \
+            -O /custom-tools/sops
+          chmod +x /custom-tools/sops
+          
+          # Устанавливаем yq для парсинга YAML
+          wget -q https://github.com/mikefarah/yq/releases/download/v4.40.5/yq_linux_amd64 \
+            -O /custom-tools/yq
+          chmod +x /custom-tools/yq
+          
+          # Устанавливаем curl и jq
+          apk add --no-cache curl jq
+          cp $(which curl) /custom-tools/
+          cp $(which jq) /custom-tools/
+      volumeMounts:
+        - name: custom-tools
+          mountPath: /custom-tools
+
+configs:
+  # Конфигурация плагина SOPS
+  cm:
+    plugins: |
+      plugin.yaml: |
+        apiVersion: argoproj.io/v1alpha1
+        kind: ConfigManagementPlugin
+        metadata:
+          name: sops-to-vault
+        spec:
+          version: v1.0
+          generate:
+            command: ["bash", "-c"]
+            args:
+              - |
+                # Расшифровываем SOPS
+                DECRYPTED=$(/custom-tools/sops -d "$MANIFEST_PATH")
+                
+                # Парсим данные
+                VAULT_PATH=$(echo "$DECRYPTED" | /custom-tools/yq '.metadata.annotations.vaultPath')
+                SECRET_NAME=$(echo "$DECRYPTED" | /custom-tools/yq '.metadata.name')
+                NAMESPACE=$(echo "$DECRYPTED" | /custom-tools/yq '.metadata.namespace // "default"')
+                
+                # Создаем ConfigMap с данными для Vault
+                cat <<EOF
+                apiVersion: v1
+                kind: ConfigMap
+                metadata:
+                  name: ${SECRET_NAME}-vault-data
+                  namespace: ${NAMESPACE}
+                data:
+                  vault-path: "${VAULT_PATH}"
+                  $(echo "$DECRYPTED" | /custom-tools/yq '.stringData | to_entries | map(.key + ": \"" + .value + "\"") | join("\n  ")')
+                ---
+                apiVersion: batch/v1
+                kind: Job
+                metadata:
+                  name: vault-writer-${SECRET_NAME}
+                  namespace: ${NAMESPACE}
+                  annotations:
+                    argocd.argoproj.io/hook: PostSync
+                    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+                spec:
+                  ttlSecondsAfterFinished: 60
+                  backoffLimit: 1
+                  template:
+                    spec:
+                      serviceAccountName: vault-writer-sa
+                      restartPolicy: Never
+                      containers:
+                      - name: vault-writer
+                        image: hashicorp/vault:latest
+                        command: ["/bin/sh"]
+                        args:
+                        - -c
+                        - |
+                          # Настройка Vault
+                          export VAULT_ADDR=http://vault.vault:8200
+                          export VAULT_TOKEN=root
+                          
+                          # Читаем путь из ConfigMap
+                          VAULT_PATH=\$(cat /vault-data/vault-path)
+                          echo "Writing to Vault path: \${VAULT_PATH}"
+                          
+                          # Собираем команду для записи
+                          cd /vault-data
+                          DATA_PARAMS=""
+                          for file in *; do
+                            if [[ "\$file" != "vault-path" ]]; then
+                              VALUE=\$(cat "\$file")
+                              DATA_PARAMS="\${DATA_PARAMS} \$file=\"\${VALUE}\""
+                            fi
+                          done
+                          
+                          # Записываем в Vault
+                          vault kv put "\$VAULT_PATH" \$DATA_PARAMS
+                          
+                          echo "✅ Successfully written to Vault"
+                        volumeMounts:
+                        - name: vault-data
+                          mountPath: /vault-data
+                      volumes:
+                      - name: vault-data
+                        configMap:
+                          name: ${SECRET_NAME}-vault-data
+                EOF
+
+controller:
+  extraArgs:
+    - --loglevel=info
