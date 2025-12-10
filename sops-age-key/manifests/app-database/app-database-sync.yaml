@@ -1,0 +1,92 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: app-database-to-vault
+  namespace: default
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      containers:
+      - name: vault-sync
+        image: curlimages/curl:latest
+        env:
+        - name: VAULT_ADDR
+          value: "https://vault.vault.svc:8200"
+        - name: VAULT_SKIP_VERIFY
+          value: "true"
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          set -e
+          echo "=== Syncing app-database to Vault ==="
+          
+          VAULT_TOKEN=$(cat /vault-token/token)
+          
+          # Проверяем, существует ли уже секрет
+          echo "Checking existing secret..."
+          EXISTING_RESPONSE=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
+            $VAULT_ADDR/v1/secret/data/apps/database 2>/dev/null || echo "{\"errors\":[]}")
+          
+          # Создаем хэш текущих данных
+          cat > /tmp/new-data.json << 'EOF'
+          {"data": {"test": "artem", "prod": "karina"}}
+          EOF
+          
+          NEW_HASH=$(md5sum /tmp/new-data.json | cut -d' ' -f1)
+          echo "New data hash: $NEW_HASH"
+          
+          # Если секрет уже существует, проверяем хэш
+          if echo "$EXISTING_RESPONSE" | grep -q '"data"'; then
+            echo "Existing secret found, comparing..."
+            echo "$EXISTING_RESPONSE" | jq '.data' > /tmp/existing-data.json
+            EXISTING_HASH=$(md5sum /tmp/existing-data.json | cut -d' ' -f1)
+            echo "Existing hash: $EXISTING_HASH"
+            
+            if [ "$NEW_HASH" = "$EXISTING_HASH" ]; then
+              echo "✅ Secret already up-to-date in Vault, skipping..."
+              exit 0
+            fi
+            echo "⚠️  Secret exists but differs, updating..."
+          else
+            echo "📝 Creating new secret in Vault..."
+          fi
+          
+          # Отправляем в Vault
+          echo "Sending to Vault..."
+          RESPONSE=$(curl -s -w "%{http_code}" -X POST \
+            -H "X-Vault-Token: $VAULT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @/tmp/new-data.json \
+            $VAULT_ADDR/v1/secret/data/apps/database 2>/dev/null)
+          
+          HTTP_CODE=${RESPONSE: -3}
+          BODY=${RESPONSE:0:-3}
+          
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "204" ]; then
+            echo "✅ Successfully synced to Vault"
+          else
+            echo "❌ Failed to sync to Vault. HTTP: $HTTP_CODE"
+            echo "Response: $BODY"
+            exit 1
+          fi
+          
+          sleep 2
+        volumeMounts:
+        - name: secrets
+          mountPath: /tmp/k8s-secret
+          readOnly: true
+        - name: vault-token
+          mountPath: /vault-token
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: app-database
+      - name: vault-token
+        secret:
+          secretName: vault-token
+      restartPolicy: Never
