@@ -1,0 +1,25 @@
+apiVersion: ENC[AES256_GCM,data:8BE=,iv:i4bU/v3h+1ehZxX5ElC+9uhJNLFafuzJgMKUonw2Bhg=,tag:YWO17HJBkq4bABzMfIgIGQ==,type:str]
+kind: ENC[AES256_GCM,data:OKw27O1F,iv:tRH+4ywrTDix/YYTu8fnlbM54OGxSdR/6Znt2NZsq6g=,tag:6gMgDvXOV4pa52JXvYK8jw==,type:str]
+metadata:
+    name: ENC[AES256_GCM,data:DHCi/lLD,iv:7hoYpuixybdxjY/H5/5WSB5fNLFx5S1ztVq3M20eQk0=,tag:EaU71ZJgoJQD9KmLm/qO6w==,type:str]
+    namespace: ENC[AES256_GCM,data:j6Z25zGPSg==,iv:3CAQ288X8SPIEx/ww0/DlBxpWfKZJ29UauQ2h7WYTII=,tag:W6+7/AX+MKzH5oePEHo91Q==,type:str]
+type: ENC[AES256_GCM,data:K4UTwUzf,iv:pnQmCEDH9IpgJV8ZgwXyffpIL28/W6tBQxqjrQOYuf0=,tag:v6nLGhz/RU9YYgVqw6rphA==,type:str]
+stringData:
+    first: ENC[AES256_GCM,data:ZrVmkUHCaA==,iv:lxHPjHvT76nTEhtj2jXoWu7TlRRilv+GEmKSkn36YAM=,tag:z56Fi+bUHAl3lKud//VOKA==,type:str]
+    second: ENC[AES256_GCM,data:bmGL3r/sKg==,iv:ZbQOd9+1K6Nk7XiHf+kCP++nOi6+KbIw0U2knq+FZns=,tag:7inf2nV209LhsEcWpPktrg==,type:str]
+    third: ENC[AES256_GCM,data:sxMxQlA=,iv:F13z2P2JTRTFPU6AW+xeL08qnXccCC/iZvZ1nFvEHuY=,tag:RkKWRyyWKW0eqRH+ok1UCA==,type:str]
+sops:
+    age:
+        - recipient: age1vd67wcx5n5x47lrmlcmp4emf5xl6yc5v8gzna48mukn0werafdpqgkjzaz
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBVTVFoSU1HRVQ2c0ZwMi9w
+            MHpzS1BiRjdGbk00akoxU2hPc0d6RzNITlJJCmo3YUo5WEFxL2VXOVplcUV0TENz
+            ckM1TExhNlViR05rSTZLWmNicUhBSVUKLS0tIFE2WlpSaERFa3JtRzBuTDZObnhi
+            cCs0TDJCWGVNV0drRHl4VU5ncWx6UGcKY96LIZd5+D0/M7pek+ObTl84m5UowO4I
+            aEzIPNnTcOoVebzmivh6pcThQSTgd5jozh2Ld5SBZOs3RXYxik92AQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2025-12-10T11:11:40Z"
+    mac: ENC[AES256_GCM,data:o7iG4HQlhibiU9kXw2WTajTbR0OG9YGUx6tkjiXQmYtca3XVFx6QynWkKWAzA5ng0tzxnZD8/yqAmbDADxNKOT4OXIkud5lbN8shs/+SkLw2F5aROlkgWKsh8WJPw+ACdxES53zwvWPy1B4LgoNfPWD96h9ZFgi/IunRt92sSx0=,iv:HC4LFLBIHbi5dUKpLe//pyluN7AvXZGrs0Kye6rSvAk=,tag:n+ST8F4nBNh58fiT4PXRCA==,type:str]
+    unencrypted_suffix: _unencrypted
+    version: 3.11.0
