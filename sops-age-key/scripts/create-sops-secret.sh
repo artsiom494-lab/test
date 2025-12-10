@@ -142,7 +142,7 @@ spec:
     spec:
       containers:
       - name: vault-sync
-        image: curlimages/curl:latest
+        image: alpine/curl:latest
         env:
         - name: VAULT_ADDR
           value: "https://vault.vault.svc:8200"
@@ -151,28 +151,73 @@ spec:
         command: ["/bin/sh", "-c"]
         args:
         - |
-          set -e
+          set -ex
           echo "=== Syncing ${SECRET_NAME} to Vault ==="
           
+          # 1. Проверяем наличие токена
+          echo "1. Checking Vault token..."
+          if [ ! -f /vault-token/token ]; then
+            echo "❌ Vault token not found at /vault-token/token"
+            ls -la /vault-token/
+            exit 1
+          fi
+          
           VAULT_TOKEN=\$(cat /vault-token/token)
+          echo "Token exists (first 10 chars): \${VAULT_TOKEN:0:10}..."
           
-          # Проверяем, существует ли уже секрет
-          echo "Checking existing secret..."
-          EXISTING_RESPONSE=\$(curl -s -H "X-Vault-Token: \$VAULT_TOKEN" \\
-            \$VAULT_ADDR/v1/${VAULT_PATH} 2>/dev/null || echo "{\"errors\":[]}")
+          # 2. Проверяем доступность Vault
+          echo "2. Checking Vault connectivity..."
+          curl -k -s -H "X-Vault-Token: \$VAULT_TOKEN" \\
+            "\$VAULT_ADDR/v1/sys/health" || {
+            echo "❌ Cannot connect to Vault"
+            exit 1
+          }
           
-          # Создаем хэш текущих данных
-          cat > /tmp/new-data.json << 'EOF'
-          ${JSON_CONTENT}
-          EOF
+          # 3. Читаем данные из смонтированного секрета
+          echo "3. Reading data from mounted secret..."
           
+          # Создаем JSON из всех файлов в директории
+          echo '{"data": {' > /tmp/new-data.json
+          FIRST=true
+          for FILE in /tmp/k8s-secret/*; do
+            KEY=\$(basename "\$FILE")
+            VALUE=\$(cat "\$FILE")
+            
+            if [ "\$FIRST" = false ]; then
+              echo -n ', ' >> /tmp/new-data.json
+            fi
+            # Экранируем JSON
+            ESCAPED_VALUE=\$(echo "\$VALUE" | sed 's/"/\\\\"/g')
+            echo -n "\"\$KEY\": \"\$ESCAPED_VALUE\"" >> /tmp/new-data.json
+            FIRST=false
+            
+            echo "  Found key: \$KEY (value length: \${#VALUE})"
+          done
+          echo '}}' >> /tmp/new-data.json
+          
+          echo "Generated JSON:"
+          cat /tmp/new-data.json
+          
+          # 4. Проверяем существующий секрет в Vault
+          echo "4. Checking existing secret in Vault..."
+          EXISTING_RESPONSE=\$(curl -k -s -w "\\n%{http_code}" \\
+            -H "X-Vault-Token: \$VAULT_TOKEN" \\
+            "\$VAULT_ADDR/v1/${VAULT_PATH}" 2>/dev/null || echo "{\\"errors\\":[]}")
+          
+          HTTP_CODE=\$(echo "\$EXISTING_RESPONSE" | tail -n1)
+          EXISTING_BODY=\$(echo "\$EXISTING_RESPONSE" | head -n-1)
+          
+          echo "Vault response code: \$HTTP_CODE"
+          
+          # 5. Проверяем хэш
           NEW_HASH=\$(md5sum /tmp/new-data.json | cut -d' ' -f1)
           echo "New data hash: \$NEW_HASH"
           
-          # Если секрет уже существует, проверяем хэш
-          if echo "\$EXISTING_RESPONSE" | grep -q '"data"'; then
+          if [ "\$HTTP_CODE" = "200" ] && echo "\$EXISTING_BODY" | grep -q '"data"'; then
             echo "Existing secret found, comparing..."
-            echo "\$EXISTING_RESPONSE" | jq '.data' > /tmp/existing-data.json
+            echo "\$EXISTING_BODY" | jq '.data' > /tmp/existing-data.json 2>/dev/null || \\
+              echo "\$EXISTING_BODY" > /tmp/existing-data.json
+            
             EXISTING_HASH=\$(md5sum /tmp/existing-data.json | cut -d' ' -f1)
             echo "Existing hash: \$EXISTING_HASH"
             
@@ -182,29 +227,36 @@ spec:
             fi
             echo "⚠️  Secret exists but differs, updating..."
           else
-            echo "📝 Creating new secret in Vault..."
+            echo "📝 Creating new secret in Vault (HTTP code: \$HTTP_CODE)..."
           fi
           
-          # Отправляем в Vault
-          echo "Sending to Vault..."
-          RESPONSE=\$(curl -s -w "%{http_code}" -X POST \\
+          # 6. Отправляем в Vault
+          echo "6. Sending to Vault..."
+          RESPONSE=\$(curl -k -s -w "\\n%{http_code}" -X POST \\
             -H "X-Vault-Token: \$VAULT_TOKEN" \\
             -H "Content-Type: application/json" \\
             -d @/tmp/new-data.json \\
-            \$VAULT_ADDR/v1/${VAULT_PATH} 2>/dev/null)
+            "\$VAULT_ADDR/v1/${VAULT_PATH}" 2>/dev/null)
           
-          HTTP_CODE=\${RESPONSE: -3}
-          BODY=\${RESPONSE:0:-3}
+          RESPONSE_CODE=\$(echo "\$RESPONSE" | tail -n1)
+          RESPONSE_BODY=\$(echo "\$RESPONSE" | head -n-1)
           
-          if [ "\$HTTP_CODE" = "200" ] || [ "\$HTTP_CODE" = "204" ]; then
+          echo "Response code: \$RESPONSE_CODE"
+          echo "Response body: \$RESPONSE_BODY"
+          
+          if [ "\$RESPONSE_CODE" = "200" ] || [ "\$RESPONSE_CODE" = "204" ]; then
             echo "✅ Successfully synced to Vault"
           else
-            echo "❌ Failed to sync to Vault. HTTP: \$HTTP_CODE"
-            echo "Response: \$BODY"
+            echo "❌ Failed to sync to Vault. HTTP: \$RESPONSE_CODE"
             exit 1
           fi
           
-          sleep 2
+          # 7. Проверяем
+          echo "7. Verifying..."
+          curl -k -s -H "X-Vault-Token: \$VAULT_TOKEN" \\
+            "\$VAULT_ADDR/v1/${VAULT_PATH}" | jq .data 2>/dev/null || \\
+            curl -k -s -H "X-Vault-Token: \$VAULT_TOKEN" \\
+            "\$VAULT_ADDR/v1/${VAULT_PATH}"
         volumeMounts:
         - name: secrets
           mountPath: /tmp/k8s-secret
