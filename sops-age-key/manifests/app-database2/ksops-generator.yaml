@@ -1,0 +1,6 @@
+apiVersion: viaduct.ai/v1
+kind: ksops
+metadata:
+  name: app-database2-generator
+files:
+  - ./app-database2-encrypted.yaml
